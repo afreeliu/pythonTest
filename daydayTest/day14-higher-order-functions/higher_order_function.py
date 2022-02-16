@@ -46,3 +46,44 @@ print(high_func(square, list(range(10))))
         key：可以用来计算的排序函数
         reverse：排序规则，reverse=true 降序， reverse=false 升序（默认）    
 '''
+
+# 使用自带数学函数
+facMap = map(factorial, list(range(10)))
+print(facMap) #<map object at 0x10b48bdc0>
+print(list(facMap)) #[1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880]
+
+# 使用自定义函数
+squareMap = map(square, list(range(10)))
+print(squareMap) #<map object at 0x108c07df0>
+print(list(squareMap)) #[0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+
+# 使用自定义的类型序列
+class person():
+    # name = ''
+    # age = 0
+    # phone = ''
+    # sex = 0
+    def __init__(self, name, age, phone, sex):
+        self.name = name
+        self.age = age
+        self.phone = phone
+        self.sex = sex
+
+persons = [
+    person('zhangsan1', 17, '13824472562', 1),
+person('zhangsan2', 18, '13824472563', 0),
+person('zhangsan3', 19, '13824472564', 1),
+person('zhangsan4', 20, '13824472565', 0),
+person('zhangsan5', 21, '13824472566', 1),
+]
+
+def makePhoneSecurity(person):
+    person.age = person.age + 1
+    ph = str(person.phone)
+    sph = ph[0:3] + '******' + ph[-2:]
+    person.phone = sph
+    return person
+
+spersons = map(makePhoneSecurity, persons)
+for p in list(spersons):
+    print(p.name, p.age, p.phone, p.sex)
