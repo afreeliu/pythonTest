@@ -1,4 +1,5 @@
 from math import factorial
+from functools import  reduce
 '''
 
     Python 中的高阶函数
@@ -47,6 +48,7 @@ print(high_func(square, list(range(10))))
         reverse：排序规则，reverse=true 降序， reverse=false 升序（默认）    
 '''
 
+
 # 使用自带数学函数
 facMap = map(factorial, list(range(10)))
 print(facMap) #<map object at 0x10b48bdc0>
@@ -87,3 +89,84 @@ def makePhoneSecurity(person):
 spersons = map(makePhoneSecurity, persons)
 for p in list(spersons):
     print(p.name, p.age, p.phone, p.sex)
+
+
+
+# 使用匿名函数
+lamMap = map(lambda x: x*2, list(range(10)))
+print(list(lamMap))
+# 使用匿名函数，并传入多个序列。当传入的序列的长度不想等时，得到的值map对象的长度为最短的序列的长度
+mutiMap = map(lambda x, y: x+y, list(range(10)), list(range(11, 18)))
+print(list(mutiMap))
+
+
+
+'''
+    reduce
+    # 注意，现在 reduce() 函数已经放入到 functools 包中
+'''
+
+def addValue(x, y):
+    print(x, y)
+    return x+y
+
+# 无初始值的情况下
+redValue = reduce(addValue, list(range(10)))
+print(redValue)
+
+'''
+    # 含有初始值的情况下，那么初始值的数据类型需要和序列的数据类型一致
+    1、字符串序列相加
+'''
+credValue = reduce(addValue, ['1', '2', '3', '4', '5'], '字符串组合后为:')
+print(credValue)
+
+'''
+    2、数值类型相加
+'''
+nredValue = reduce(addValue, list(range(10)), 100)
+print(nredValue)
+
+
+'''
+    filter(func or None, iterable) --> filter object
+    
+    filter 函数主要是用来过滤掉不符合条件的值，返回一个迭代器，该迭代器生成那些函数（项）为True的iterable项，如果函数为 None， 则返回为true的项
+'''
+def evenNumber(number):
+    if number % 2 == 0:
+        return True
+    return False
+
+filterList = filter(evenNumber, list(range(10)))
+print(list(filterList))
+
+nonefilterList = filter(lambda x: x % 2 == 0, list(range(10)))
+print(list(nonefilterList)) # [0, 2, 4, 6, 8]
+
+
+'''
+    sorted
+    sorted 函数默认将序列升序排列后返回一个新的list，还可以自定义键函数来进行排序，也可以设置 reverse 参数确定是升序还是降序
+    如果 reverse = True 则为降序
+'''
+
+list0 = [5, -1, 4, -8, 6, 9, 23, -5, 27, 45]
+list1 = ['sd', 'we', 'sdf', 'qwe', 'lkj', 'kw', 'qkw']
+
+# 直接使用 sorted 函数
+print(sorted(list0)) # [-8, -5, -1, 4, 5, 6, 9, 23, 27, 45]
+print(sorted(list1)) # ['kw', 'lkj', 'qkw', 'qwe', 'sd', 'sdf', 'we']
+
+# 增加排序函数 , abs()求数值的绝对值
+print(sorted(list0, key=abs))
+
+# reverse = True 降序
+print(sorted(list0, reverse=True)) # [45, 27, 23, 9, 6, 5, 4, -1, -5, -8]
+
+def sortCharater(x):
+    print(x)
+    return x[-1:]
+
+# 自定义函数 lambda
+print(sorted(list1, key=sortCharater, reverse = True))
