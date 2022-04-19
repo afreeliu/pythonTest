@@ -2,6 +2,7 @@
 
 # Press ⌃R to execute it or replace it with your code.
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+import random
 
 
 def print_hi(name):
@@ -27,10 +28,20 @@ class Car(object):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    # print_hi('PyCharm')
+    #
+    # c = Car('宝马')
+    # c.run('110km')
 
-    c = Car('宝马')
-    c.run('110km')
+    print(random.randrange(1, 100))
+    a = random.randrange(1, 100)
+
+    #1、记录用户输入了多少次
+    count = 0
+    while count < 10: # 输入少于
+        print(count)
+        count += 1
+    print('结束')
 
     # Car.run('100km')
 

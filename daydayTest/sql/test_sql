@@ -1,0 +1,68 @@
+
+
+-- 一、查询 01课程 比 02课程 成绩高的学生的信息及课程分数
+-- 1. 查询课程 01 的学生的信息 和 分数
+SELECT stu_id, score AS class1 FROM Score WHERE sc_id = 01;
+-- 2. 查询课程 02 的学生的信息 和 分数 
+SELECT stu_id, score AS class2 FROM Score WHERE sc_id = 02;
+-- 3. 从上面两张表中 查询 课程01 比 课程02 的分数打的课程和 学生ID
+SELECT t1.stu_id, class1, class2 FROM
+	(SELECT stu_id, score AS class1 FROM Score WHERE sc_id = 01) AS t1,
+	(SELECT stu_id, score AS class2 FROM Score WHERE sc_id = 02) AS t2
+	WHERE t1.stu_id = t2.stu_id AND t1.class1 > t2.class2;
+-- 4. 最后，查询学生的表格，然后学生表的 stu_id 和 上面得到的 stu_id 相等
+SELECT * FROM Student RIGHT JOIN(
+	SELECT t1.stu_id, class1, class2 FROM
+		(SELECT stu_id, score AS class1 FROM Score WHERE sc_id = 01) AS t1,
+		(SELECT stu_id, score AS class2 FROM Score WHERE sc_id = 02) AS t2
+			WHERE t1.stu_id = t2.stu_id AND t1.class1 > t2.class2
+)r
+ON Student.stu_id = r.stu_id;
+
+-- 4.1 第二种方式使用 LEFT JOIN 
+SELECT * FROM (
+	SELECT t1.stu_id, class1, class2 
+	FROM
+		(SELECT stu_id, score AS class1 FROM Score WHERE sc_id = 01) AS t1,
+		(SELECT stu_id, score AS class2 FROM Score WHERE sc_id = 02) AS t2
+	WHERE t1.stu_id = t2.stu_id AND t1.class1 > t2.class2
+)r 
+LEFT JOIN Student
+ON Student.stu_id = r.stu_id;
+
+
+-- -------------------------------------------------------------------------------
+
+
+-- 二、 查询同时存在 01课程 和 02课程 的情况
+-- 1. 分别先查询 01课程 和 02课程
+SELECT stu_id, sc_id AS class1 FROM Score WHERE sc_id = 01;
+SELECT stu_id, sc_id AS class2 FROM Score WHERE sc_id = 02;
+
+-- 2. 然后查询分同时有 01课程 和 02课程 的信息
+SELECT t1.stu_id, class1, class1_score, class2, class2_score FROM 
+	(SELECT stu_id, sc_id AS class1, score AS class1_score FROM Score WHERE sc_id = 01) AS t1,
+	(SELECT stu_id, sc_id AS class2, score AS class2_score FROM Score WHERE sc_id = 02) AS t2
+WHERE t1.stu_id = t2.stu_id;
+
+-- 3. 最后 根据查询的再匹配学生Student 表的学生的信息
+SELECT * FROM Student RIGHT JOIN (
+	SELECT t1.stu_id, class1, class1_score, class2, class2_score FROM
+		(SELECT stu_id, sc_id AS class1, score AS class1_score FROM Score WHERE sc_id = 01) AS t1,
+		(SELECT stu_id, sc_id AS class2, score AS class2_score FROM Score WHERE sc_id = 02) AS t2
+	WHERE t1.stu_id = t2.stu_id
+)r 
+ON Student.stu_id = r.stu_id;
+
+
+-- 三、查询存在 01课程 但可能不存在 02课程 的情况（不存在时可以显示为null）
+-- 1. 先查询 02课程的数据
+SELECT stu_id, sc_id AS class2, score FROM Score WHERE sc_id = 02;
+-- 2. 查询 01课程的数据
+SELECT stu_id, sc_id AS class1, score FROM Score WHERE sc_id = 01;
+-- 3. 从以上两个数据中查询相关的数据，且比较存在01而不存在02的数据
+SELECT t1.stu_id, t1.class1, t1.score AS class1_score, t2.class2, t2.score AS class2_score FROM
+	(SELECT stu_id, sc_id AS class1, score FROM Score WHERE sc_id = 01) AS t1
+LEFT JOIN
+	(SELECT stu_id, sc_id AS class2, score FROM Score WHERE sc_id = 02) AS t2
+ON t1.stu_id = t2.stu_id;
