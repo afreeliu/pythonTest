@@ -26,7 +26,7 @@ insert into Teacher values('02' , '李四');
 insert into Teacher values('03' , '王五');
 
 -- 创建成绩表 
-CREATE TABLE Score(stu_id VARCHAR(10), t_id VARCHAR(10), score DECIMAL(18, 1));
+CREATE TABLE Score(stu_id VARCHAR(10), c_id VARCHAR(10), score DECIMAL(18, 1));
 insert into Score values('01' , '01' , 80);
 insert into Score values('01' , '02' , 90);
 insert into Score values('01' , '03' , 99);
