@@ -211,11 +211,68 @@ NOT IN
 GROUP BY stu_id
 HAVING COUNT(score) = (SELECT COUNT(c_id) FROM `Course`));
 
--- 查询至少有一门课与学号为" 01 "的同学所学相同的同学的信息
+-- 十一、查询至少有一门课与学号为" 07 "的同学所学相同的同学的信息
+SELECT * FROM `Score`;
+-- 1. 先查询 学号为‘07’的同学学习的课程
+SELECT c_id FROM `Score` WHERE stu_id = '07';
+-- 2. 再从 Score 成绩表中查询学号非‘07’的同学学习的课程
+SELECT stu_id FROM `Score` WHERE Score.stu_id != '07' AND Score.c_id IN
+	(SELECT c_id FROM `Score` WHERE Score.stu_id = '07') GROUP BY stu_id;
+-- 3. 第2步骤中查到的学生的 stu_id 然后 联合 Student 表进行联查
+SELECT * FROM `Student`, 
+	(SELECT stu_id FROM `Score` WHERE Score.stu_id != '07' AND Score.c_id IN
+	(SELECT c_id FROM `Score` WHERE Score.stu_id = '07') GROUP BY stu_id) t
+WHERE Student.stu_id = t.stu_id;
+-- 方式二，使用 RIGHT JOIN 的方式
+SELECT * FROM `Student`
+LEFT JOIN
+(SELECT stu_id FROM `Score` WHERE Score.stu_id != '07' AND Score.c_id IN
+	(SELECT c_id FROM `Score` WHERE Score.stu_id = '07') GROUP BY stu_id) t
+ON Student.stu_id = t.stu_id;
 
--- 查询和" 01 "号的同学学习的课程 完全相同的其他同学的信息
 
--- 查询没学过"张三"老师讲授的任一门课程的学生姓名
+-- 十二、查询和" 01 "号的同学学习的课程 完全相同的其他同学的信息
+-- 原始思路就是：去查找 01 号同学学习的课程，那么这样的到的就是另一个表
+-- 貌似 sql 中没有能进行比较两个表相等的方法，因此需要转化思路
+-- 等价于修了和01相同课程，那么就是01没有修他们就没有修
+-- 1. 查询 ‘01’学号的同学学习的课程
+SELECT c_id FROM `Score` WHERE stu_id = '01';
+-- 2. 查询Course 表中的课程，那些不在 步骤 1 中查询到的
+SELECT c_id FROM `Course` 
+WHERE c_id
+NOT IN
+(SELECT c_id FROM `Score` WHERE stu_id = '01');
+-- 3. 
+select count(stu_id) from `Score` where stu_id = '01';
+
+-- 答案
+select stu_id from `Score` 
+where c_id 
+not in 
+	(select c_id from `Course` 
+	 where c_id 
+	 not in 
+	 	(select c_id from `Score` where stu_id = '01')) 
+group by stu_id
+having count(stu_id) = (select count(stu_id) from `Score` where stu_id = '01');
+
+
+
+-- 十三、查询没学过"张三"老师讲授的任一门课程的学生姓名
+-- 1. 找出张三老师教授的课程的课程号
+SELECT c_id FROM `Course`
+WHERE `Course`.t_id 
+IN (SELECT t_id FROM `Teacher` WHERE t_name = '张三');
+-- 2. 找出选了课程的学生的编号
+SELECT * FROM `Score`
+WHERE score.c_id IN
+(SELECT c_id FROM `Course`
+WHERE `Course`.t_id 
+IN (SELECT t_id FROM `Teacher` WHERE t_name = '张三'));
+
+
+
+
 
 -- 查询两门及其以上不及格课程的同学的学号，姓名及其平均成绩
 
