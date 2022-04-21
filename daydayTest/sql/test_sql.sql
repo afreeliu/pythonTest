@@ -263,18 +263,40 @@ having count(stu_id) = (select count(stu_id) from `Score` where stu_id = '01');
 SELECT c_id FROM `Course`
 WHERE `Course`.t_id 
 IN (SELECT t_id FROM `Teacher` WHERE t_name = '张三');
--- 2. 找出选了课程的学生的编号
+-- 2. 找出选了课程的学生的编号，且选的课程中包含了02课程，即张三老师的课
 SELECT * FROM `Score`
 WHERE score.c_id IN
 (SELECT c_id FROM `Course`
 WHERE `Course`.t_id 
 IN (SELECT t_id FROM `Teacher` WHERE t_name = '张三'));
+-- 3. 根据第 2 步骤得到的学生的stu_id，然后从Student表中找出不在第 2 步骤的 学生的stu_id
+SELECT * FROM `Student`
+WHERE stu_id
+NOT IN
+	(SELECT stu_id FROM `Score`
+	WHERE score.c_id IN
+		(SELECT c_id FROM `Course`
+		WHERE `Course`.t_id 
+		IN (SELECT t_id FROM `Teacher` WHERE t_name = '张三')
+	)
+);
 
 
+-- 十四、 查询两门及其以上不及格课程的同学的学号，姓名及其平均成绩
+SELECT * FROM `Score`;
+-- 1. 先选择不及格的同学分别都列出来
+SELECT * FROM `Score`
+WHERE score < 60;
+-- 2. 根据出现的 stu_id 的次数统计不及格的次数
+SELECT stu_id, COUNT(stu_id) as low_count, SUM(score) as sum_score FROM `Score`
+WHERE score < 60
+GROUP BY stu_id;
 
-
-
--- 查询两门及其以上不及格课程的同学的学号，姓名及其平均成绩
+SELECT stu_id, sum_score/low_count as avg_score FROM
+(SELECT stu_id, COUNT(stu_id) as low_count, SUM(score) as sum_score  FROM `Score`
+WHERE score < 60
+GROUP BY stu_id) t
+WHERE t.low_count > 1;
 
 -- 检索" 01 "课程分数小于 60，按分数降序排列的学生信息
 
