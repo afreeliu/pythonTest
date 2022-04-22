@@ -291,16 +291,32 @@ WHERE score < 60;
 SELECT stu_id, COUNT(stu_id) as low_count, SUM(score) as sum_score FROM `Score`
 WHERE score < 60
 GROUP BY stu_id;
-
+-- 3. 根据第 2 步骤的到的数据，从中选择符合条件的即可
 SELECT stu_id, sum_score/low_count as avg_score FROM
 (SELECT stu_id, COUNT(stu_id) as low_count, SUM(score) as sum_score  FROM `Score`
 WHERE score < 60
 GROUP BY stu_id) t
 WHERE t.low_count > 1;
 
--- 检索" 01 "课程分数小于 60，按分数降序排列的学生信息
+-- 十五、检索" 01 "课程分数小于 60，按分数降序排列的学生信息
+SELECT * FROM `Score`;
+-- 1. 从 Score 表中查找 小于60 分的，且课程为 01 的
+SELECT * FROM `Score`
+WHERE c_id = '01' AND score < 60
+--ORDER BY score ASC; -- 升序，默认
+ORDER BY score DESC; -- 降序
+-- 2. 联合学生表 Student 进行一起查询组合成需求
+SELECT Student.stu_id, stu_name, t.c_id, t.score FROM `Student`
+RIGHT JOIN
+(SELECT * FROM `Score`
+WHERE c_id = '01' AND score < 60
+ORDER BY score DESC) t
+ON Student.stu_id = t.stu_id;
 
--- 按平均成绩从高到低显示所有学生的所有课程的成绩以及平均成绩
+
+-- 十六、按平均成绩从高到低显示所有学生的所有课程的成绩以及平均成绩
+-- 1. 先制作一张表，学生的信息以及所有课程的信息的表
+SELECT GROUP_CONCAT(c_name, c_id) FROM Course;
 
 -- 查询各科成绩最高分、最低分和平均分：
 
