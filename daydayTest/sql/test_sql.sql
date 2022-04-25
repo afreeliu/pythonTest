@@ -358,8 +358,18 @@ GROUP BY c_id;
 SELECT c_id, COUNT(*) as all_count FROM `Score`
 GROUP BY c_id;
 -- 5. 步骤 3 的及格的个数 / 步骤 4 的总人数的到及格率
-SELECT p.c_id,  FROM
-
+SELECT p.c_id, p.pass_count/a.all_count as pass_rate FROM
+(
+	SELECT c_id, COUNT(*) as pass_count FROM `Score`
+	WHERE score > 60
+	GROUP BY c_id
+) p
+LEFT JOIN
+(
+	SELECT c_id, COUNT(*) as all_count FROM `Score`
+	GROUP BY c_id
+) a
+ON p.c_id = a.c_id;
 
 -- 按各科成绩进行排序，并显示排名， Score 重复时保留名次空缺
 -- 15.1 按各科成绩进行排序，并显示排名， Score 重复时合并名次
