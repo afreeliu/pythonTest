@@ -298,17 +298,68 @@ WHERE score < 60
 GROUP BY stu_id) t
 WHERE t.low_count > 1;
 
--- 检索" 01 "课程分数小于 60，按分数降序排列的学生信息
+-- 十五、检索" 01 "课程分数小于 60，按分数降序排列的学生信息
+-- 1. 先从 Score 表中找出 课程为 01 的 分数小于60分的学生的信息，Desc 的降序排列
+SELECT * FROM `Score`
+WHERE c_id = '01' AND score < 60
+ORDER BY score DESC;
 
--- 按平均成绩从高到低显示所有学生的所有课程的成绩以及平均成绩
+-- 2. 再从 Student 表中查询学生的信息，然后 Right Join 的方式插入到步骤1中查询到的信息中
+SELECT * FROM `Student`
+RIGHT JOIN
+(
+	SELECT * FROM `Score`
+	WHERE c_id = '01' AND score < 60
+	ORDER BY score DESC
+) t
+ON Student.stu_id = t.stu_id;
 
--- 查询各科成绩最高分、最低分和平均分：
 
+-- 十六、 按平均成绩从高到低显示所有学生的所有课程的成绩以及平均成绩
+-- 1. 先从 Score 表中计算出每个学生的平均成绩
+SELECT stu_id, AVG(score) as avg_score FROM `Score`
+GROUP BY stu_id;
+
+-- 2. 再从 Score 中查询出学生的各科的成绩，然后把步骤 1 中的插入到对应的学号即可
+SELECT * FROM `Score`
+LEFT JOIN
+(
+	SELECT stu_id, AVG(score) as avg_score FROM `Score`
+	GROUP BY stu_id
+) t
+ON Score.stu_id = t.stu_id
+ORDER BY t.avg_score Desc;
+
+
+
+-- 十七、查询各科成绩最高分、最低分和平均分：
 -- 以如下形式显示：课程 ID，课程 name，最高分，最低分，平均分，及格率，中等率，优良率，优秀率
-
 -- 及格为>=60，中等为：70-80，优良为：80-90，优秀为：>=90
-
 -- 要求输出课程号和选修人数，查询结果按人数降序排列，若人数相同，按课程号升序排列
+-- 1. 先把成绩表 Score 按通过max，min，avg 函数找出来
+SELECT c_id, MAX(score) as max_score, MIN(score) as min_score, AVG(score) as avg_score FROM `Score`
+GROUP BY c_id;
+
+-- 2. 从 课程表Course 中查找课程的信息然后把步骤 1 的结果对应插入到结果中
+-- 得到表： 课程 ID，课程 name，最高分，最低分，平均分
+SELECT Course.c_id, c_name, t.max_score, t.min_score, t.avg_score FROM `Course`
+LEFT JOIN
+(
+	SELECT c_id, MAX(score) as max_score, MIN(score) as min_score, AVG(score) as avg_score FROM `Score`
+	GROUP BY c_id
+) t
+ON Course.c_id = t.c_id;
+
+-- 3.找出每一科的及格的个数
+SELECT c_id, COUNT(*) as pass_count FROM `Score`
+WHERE score > 60
+GROUP BY c_id;
+-- 4. 找出每一科的总人数
+SELECT c_id, COUNT(*) as all_count FROM `Score`
+GROUP BY c_id;
+-- 5. 步骤 3 的及格的个数 / 步骤 4 的总人数的到及格率
+SELECT p.c_id,  FROM
+
 
 -- 按各科成绩进行排序，并显示排名， Score 重复时保留名次空缺
 -- 15.1 按各科成绩进行排序，并显示排名， Score 重复时合并名次
