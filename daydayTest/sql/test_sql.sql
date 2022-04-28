@@ -370,11 +370,98 @@ LEFT JOIN
 	GROUP BY c_id
 ) a
 ON p.c_id = a.c_id;
+-- 以上方式可以慢慢一个一个找出来，但是不是比较好的方式，是没有使用sql中能使用函数方法的方式
+-- 参考答案如下，使用sql中的函数可以更简洁书写
+SELECT 	sc.c_id,
+		c.c_name,
+		sc.count_student,
+		sc.max_score,
+		sc.min_score,
+		sc.avg_score,
+		sc.pass_rate,
+		sc.mid_rate,
+		sc.good_rate,
+		sc.excellent_rate
+FROM
+(
+	SELECT c_id,
+		count(*) as count_student,
+		max(score) as max_score,
+		min(score) as min_score,
+		avg(score) as avg_score,
+		SUM(case when score>=60 then 1 else 0 end)/COUNT(*) as pass_rate,
+		SUM(case when score>=70 then 1 else 0 end)/COUNT(*) as mid_rate,
+		SUM(case when score>=80 then 1 else 0 end)/COUNT(*) as good_rate,
+		SUM(case when score>=90 then 1 else 0 end)/COUNT(*) as excellent_rate
+	FROM Score
+	GROUP BY c_id
+) sc
+LEFT JOIN
+(
+	SELECT * FROM Course
+) c
+ON sc.c_id = c.c_id
+ORDER BY sc.count_student DESC, sc.c_id ASC;
 
--- 按各科成绩进行排序，并显示排名， Score 重复时保留名次空缺
--- 15.1 按各科成绩进行排序，并显示排名， Score 重复时合并名次
 
--- 查询学生的总成绩，并进行排名，总分重复时保留名次空缺
+
+
+-- 十八、按各科成绩进行排序，并显示排名， Score 重复时保留名次空缺
+-- 这题不会做，直接看答案
+SELECT c.c_id, c.stu_id, c.score, COUNT(c2.score) + 1 as ran
+FROM Score as c
+LEFT JOIN Score as c2
+ON c.score < c2.score AND c.c_id = c2.c_id
+GROUP BY c.c_id, c.stu_id, c.score
+ORDER BY c.c_id, ran ASC;
+-- 可以用变量，但也有更为简单的方法，即自交（左交）
+-- 用sc中的score和自己进行对比，来计算“比当前分数高的分数有几个”。
+
+
+-- 十八.1 按各科成绩进行排序，并显示排名， Score 重复时合并名次
+-- 先 按各科成绩进行排序
+SELECT sc1.stu_id, sc1.c_id, sc1.score, COUNT(sc2.score)+1 as ran FROM Score as sc1
+LEFT JOIN
+Score as sc2
+ON sc1.score < sc2.score AND sc1.c_id = sc2.c_id
+GROUP BY sc1.c_id, sc1.stu_id, sc1.score
+ORDER BY sc1.c_id, ran ASC;
+
+
+
+-- 十九、查询学生的总成绩，并进行排名，总分重复时保留名次空缺
+
+SELECT sc1.stu_id, sc1.score  FROM `Score` as sc1;
+
+SELECT sc1.stu_id, SUM(sc1.score) as sum_score FROM Score as sc1
+GROUP BY sc1.stu_id
+ORDER BY sum_score DESC;
+
+SELECT t.stu_id, t.sum_score, COUNT(t.sum_score) FROM
+(
+SELECT sc1.stu_id, SUM(sc1.score) as sum_score FROM Score as sc1
+GROUP BY sc1.stu_id
+ORDER BY sum_score DESC
+) t
+LEFT JOIN 
+(
+SELECT sc.stu_id, SUM(sc.score) as sum_score FROM Score as sc
+GROUP BY sc.stu_id
+ORDER BY sum_score DESC
+) t2
+ON t.sum_score < t2.sum_score
+GROUP BY t.stu_id, t.sum_score;
+
+SELECT t.stu_id, sum_score, COUNT(sum(Score.score)) FROM
+(
+SELECT stu_id, SUM(score) as sum_score FROM Score
+GROUP BY stu_id
+) t
+LEFT JOIN Score
+ON t.sum_score < sum(Score.score) And t.stu_id = Score.stu_id
+GROUP BY t.stu_id, sum_score,  Score.stu_id;
+
+
 -- 16.1 查询学生的总成绩，并进行排名，总分重复时不保留名次空缺
 
 -- 统计各科成绩各分数段人数：课程编号，课程名称，[100-85]，[85-70]，[70-60]，[60-0] 及所占百分比
