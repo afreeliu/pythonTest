@@ -500,17 +500,32 @@ ON t.stu_id = s.stu_id
 WHERE t.s = 2;
 
 -- 查询男生、女生人数
-SELECT COUNT(
-	stu_sex
-) FROM `Student`
-WHERE stu_sex = '男';
+-- 解：学习使用条件语句
+SELECT 
+case
+when stu_sex = '男' then '男'
+when stu_sex = '女' then '女'
+end stu_sex, COUNT(stu_sex) num
+FROM `Student`
+GROUP BY stu_sex;
+
 
 
 -- 查询名字中含有「风」字的学生信息
+SELECT * FROM `Student`
+WHERE stu_name LIKE '%风%';
+
+
 
 -- 查询同名同性学生名单，并统计同名人数
+SELECT stu_name, stu_sex, count(*) FROM `Student`
+GROUP BY stu_name, stu_sex
+HAVING COUNT(*) > 1;
 
 -- 查询 1990 年出生的学生名单
+SELECT * FROM `Student`
+WHERE year(stu_age) = '1990';
+
 
 -- 查询每门课程的平均成绩，结果按平均成绩降序排列，平均成绩相同时，按课程编号升序排列
 
