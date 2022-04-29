@@ -429,50 +429,82 @@ ORDER BY sc1.c_id, ran ASC;
 
 
 
--- 十九、查询学生的总成绩，并进行排名，总分重复时保留名次空缺
+-- 十九、查询学生的总成绩，并进行排名，总分重复时不保留名次空缺
+-- 不会做，这里主要学习一下使用变量。在SQL里面变量用@来标识。
 
-SELECT sc1.stu_id, sc1.score  FROM `Score` as sc1;
-
-SELECT sc1.stu_id, SUM(sc1.score) as sum_score FROM Score as sc1
-GROUP BY sc1.stu_id
-ORDER BY sum_score DESC;
-
-SELECT t.stu_id, t.sum_score, COUNT(t.sum_score) FROM
-(
-SELECT sc1.stu_id, SUM(sc1.score) as sum_score FROM Score as sc1
-GROUP BY sc1.stu_id
-ORDER BY sum_score DESC
-) t
-LEFT JOIN 
-(
-SELECT sc.stu_id, SUM(sc.score) as sum_score FROM Score as sc
-GROUP BY sc.stu_id
-ORDER BY sum_score DESC
-) t2
-ON t.sum_score < t2.sum_score
-GROUP BY t.stu_id, t.sum_score;
-
-SELECT t.stu_id, sum_score, COUNT(sum(Score.score)) FROM
-(
-SELECT stu_id, SUM(score) as sum_score FROM Score
+set @crank=0;
+SELECT t.stu_id, t.total, @crank := @crank+1 as ran FROM
+(SELECT stu_id, SUM(score) as total
+FROM `Score`
 GROUP BY stu_id
-) t
-LEFT JOIN Score
-ON t.sum_score < sum(Score.score) And t.stu_id = Score.stu_id
-GROUP BY t.stu_id, sum_score,  Score.stu_id;
+ORDER BY total DESC) t;
 
-
--- 16.1 查询学生的总成绩，并进行排名，总分重复时不保留名次空缺
 
 -- 统计各科成绩各分数段人数：课程编号，课程名称，[100-85]，[85-70]，[70-60]，[60-0] 及所占百分比
+SELECT 
+t.c_name, t.c_id,
+SUM(case when t.score > 85 then 1 else 0 end)/COUNT(*) as '[100-85]',
+SUM(case when t.score > 70 AND t.score <= 85 then 1 else 0 end)/COUNT(*) as '[85-70]',
+SUM(case when t.score > 60 AND t.score <= 70 then 1 else 0 end)/COUNT(*) as '[70-60]',
+SUM(case when t.score > 0 AND t.score <= 60 then 1 else 0 end)/COUNT(*) as '[60-0]'
+FROM
+(SELECT c.c_name, sc.c_id, sc.score
+FROM `Score` as sc
+LEFT JOIN `Course` as c
+ON sc.c_id = c.c_id) t
+GROUP BY t.c_name, t.c_id;
+
 
 -- 查询各科成绩前三名的记录
+-- mysql不能group by 了以后取limit
+
+-- 答案：1. 暴力方式
+-- 计算比自己分数大的记录有几条，如果小于3 就select，
+-- 因为对前三名来说不会有3个及以上的分数比自己大了，
+-- 最后再对所有select到的结果按照分数和课程编号排名即可。
+SELECT * FROM Score
+WHERE
+(
+	SELECT COUNT(*) FROM Score as a
+	WHERE score.c_id = a.c_id and Score.score < a.score
+) < 3
+ORDER BY c_id asc, Score.score DESC;
+
+-- 答案：2. 自身左交
+select a.stu_id,a.c_id,a.score from Score a 
+left join Score b on a.c_id = b.c_id and a.score<b.score
+group by a.c_id, a.stu_id
+having count(b.c_id)<3
+order by a.c_id;
 
 -- 查询每门课程被选修的学生数
+-- 1. 先从 Score 表中计算出每门课程的学生的数量
+SELECT c_id, COUNT(stu_id) FROM `Score`
+GROUP BY c_id;
+-- 2. 将步骤 1 中得到的表 左交插入 Course 表中
+SELECT c.c_id, c_name, t.stu_count FROM `Course` c
+LEFT JOIN 
+(SELECT c_id, COUNT(stu_id) as stu_count FROM `Score`
+GROUP BY c_id) t
+ON c.c_id = t.c_id;
+
 
 -- 查询出只选修两门课程的学生学号和姓名
 
+-- 1.得到 每个学生选修课的数量
+SELECT t.stu_id, s.stu_name FROM
+(SELECT stu_id, COUNT(stu_id) as s FROM `Score`
+GROUP BY stu_id) t
+LEFT JOIN `Student` s
+ON t.stu_id = s.stu_id
+WHERE t.s = 2;
+
 -- 查询男生、女生人数
+SELECT COUNT(
+	stu_sex
+) FROM `Student`
+WHERE stu_sex = '男';
+
 
 -- 查询名字中含有「风」字的学生信息
 
