@@ -372,6 +372,14 @@ LEFT JOIN
 ON p.c_id = a.c_id;
 
 -- 按各科成绩进行排序，并显示排名， Score 重复时保留名次空缺
+SELECT sc1.c_id, sc1.stu_id, sc1.score, COUNT(sc2.score) + 1 as rank_count FROM Score as sc1
+LEFT JOIN
+Score as sc2
+ON sc1.score < sc2.score AND sc1.c_id = sc2.c_id
+GROUP BY sc1.c_id, sc1.stu_id, sc1.score
+ORDER BY sc1.c_id, rank_count ASC;
+
+
 -- 15.1 按各科成绩进行排序，并显示排名， Score 重复时合并名次
 
 -- 查询学生的总成绩，并进行排名，总分重复时保留名次空缺
@@ -404,6 +412,8 @@ ON p.c_id = a.c_id;
 -- 查询任何一门课程成绩在 70 分以上的姓名、课程名称和分数
 
 -- 查询不及格的课程
+SELECT * FROM `Score`
+WHERE score < 60;
 
 -- 查询课程编号为 01 且课程成绩在 80 分以上的学生的学号和姓名
 
