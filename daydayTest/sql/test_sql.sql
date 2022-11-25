@@ -370,6 +370,39 @@ LEFT JOIN
 	GROUP BY c_id
 ) a
 ON p.c_id = a.c_id;
+-- 以上方式可以慢慢一个一个找出来，但是不是比较好的方式，是没有使用sql中能使用函数方法的方式
+-- 参考答案如下，使用sql中的函数可以更简洁书写
+SELECT 	sc.c_id,
+		c.c_name,
+		sc.count_student,
+		sc.max_score,
+		sc.min_score,
+		sc.avg_score,
+		sc.pass_rate,
+		sc.mid_rate,
+		sc.good_rate,
+		sc.excellent_rate
+FROM
+(
+	SELECT c_id,
+		count(*) as count_student,
+		max(score) as max_score,
+		min(score) as min_score,
+		avg(score) as avg_score,
+		SUM(case when score>=60 then 1 else 0 end)/COUNT(*) as pass_rate,
+		SUM(case when score>=70 then 1 else 0 end)/COUNT(*) as mid_rate,
+		SUM(case when score>=80 then 1 else 0 end)/COUNT(*) as good_rate,
+		SUM(case when score>=90 then 1 else 0 end)/COUNT(*) as excellent_rate
+	FROM Score
+	GROUP BY c_id
+) sc
+LEFT JOIN
+(
+	SELECT * FROM Course
+) c
+ON sc.c_id = c.c_id
+ORDER BY sc.count_student DESC, sc.c_id ASC;
+
 
 -- 按各科成绩进行排序，并显示排名， Score 重复时保留名次空缺
 SELECT sc1.c_id, sc1.stu_id, sc1.score, COUNT(sc2.score) + 1 as rank_count FROM Score as sc1
@@ -382,30 +415,156 @@ ORDER BY sc1.c_id, rank_count ASC;
 
 -- 15.1 按各科成绩进行排序，并显示排名， Score 重复时合并名次
 
--- 查询学生的总成绩，并进行排名，总分重复时保留名次空缺
--- 16.1 查询学生的总成绩，并进行排名，总分重复时不保留名次空缺
+
+
+-- 十八、按各科成绩进行排序，并显示排名， Score 重复时保留名次空缺
+-- 这题不会做，直接看答案
+SELECT c.c_id, c.stu_id, c.score, COUNT(c2.score) + 1 as ran
+FROM Score as c
+LEFT JOIN Score as c2
+ON c.score < c2.score AND c.c_id = c2.c_id
+GROUP BY c.c_id, c.stu_id, c.score
+ORDER BY c.c_id, ran ASC;
+-- 可以用变量，但也有更为简单的方法，即自交（左交）
+-- 用sc中的score和自己进行对比，来计算“比当前分数高的分数有几个”。
+
+
+-- 十八.1 按各科成绩进行排序，并显示排名， Score 重复时合并名次
+-- 先 按各科成绩进行排序
+SELECT sc1.stu_id, sc1.c_id, sc1.score, COUNT(sc2.score)+1 as ran FROM Score as sc1
+LEFT JOIN
+Score as sc2
+ON sc1.score < sc2.score AND sc1.c_id = sc2.c_id
+GROUP BY sc1.c_id, sc1.stu_id, sc1.score
+ORDER BY sc1.c_id, ran ASC;
+
+
+
+-- 十九、查询学生的总成绩，并进行排名，总分重复时不保留名次空缺
+-- 不会做，这里主要学习一下使用变量。在SQL里面变量用@来标识。
+
+set @crank=0;
+SELECT t.stu_id, t.total, @crank := @crank+1 as ran FROM
+(SELECT stu_id, SUM(score) as total
+FROM `Score`
+GROUP BY stu_id
+ORDER BY total DESC) t;
+
 
 -- 统计各科成绩各分数段人数：课程编号，课程名称，[100-85]，[85-70]，[70-60]，[60-0] 及所占百分比
+SELECT 
+t.c_name, t.c_id,
+SUM(case when t.score > 85 then 1 else 0 end)/COUNT(*) as '[100-85]',
+SUM(case when t.score > 70 AND t.score <= 85 then 1 else 0 end)/COUNT(*) as '[85-70]',
+SUM(case when t.score > 60 AND t.score <= 70 then 1 else 0 end)/COUNT(*) as '[70-60]',
+SUM(case when t.score > 0 AND t.score <= 60 then 1 else 0 end)/COUNT(*) as '[60-0]'
+FROM
+(SELECT c.c_name, sc.c_id, sc.score
+FROM `Score` as sc
+LEFT JOIN `Course` as c
+ON sc.c_id = c.c_id) t
+GROUP BY t.c_name, t.c_id;
+
 
 -- 查询各科成绩前三名的记录
+-- mysql不能group by 了以后取limit
+
+-- 答案：1. 暴力方式
+-- 计算比自己分数大的记录有几条，如果小于3 就select，
+-- 因为对前三名来说不会有3个及以上的分数比自己大了，
+-- 最后再对所有select到的结果按照分数和课程编号排名即可。
+SELECT * FROM Score
+WHERE
+(
+	SELECT COUNT(*) FROM Score as a
+	WHERE score.c_id = a.c_id and Score.score < a.score
+) < 3
+ORDER BY c_id asc, Score.score DESC;
+
+-- 答案：2. 自身左交
+select a.stu_id,a.c_id,a.score from Score a 
+left join Score b on a.c_id = b.c_id and a.score<b.score
+group by a.c_id, a.stu_id
+having count(b.c_id)<3
+order by a.c_id;
 
 -- 查询每门课程被选修的学生数
+-- 1. 先从 Score 表中计算出每门课程的学生的数量
+SELECT c_id, COUNT(stu_id) FROM `Score`
+GROUP BY c_id;
+-- 2. 将步骤 1 中得到的表 左交插入 Course 表中
+SELECT c.c_id, c_name, t.stu_count FROM `Course` c
+LEFT JOIN 
+(SELECT c_id, COUNT(stu_id) as stu_count FROM `Score`
+GROUP BY c_id) t
+ON c.c_id = t.c_id;
+
 
 -- 查询出只选修两门课程的学生学号和姓名
 
+-- 1.得到 每个学生选修课的数量
+SELECT t.stu_id, s.stu_name FROM
+(SELECT stu_id, COUNT(stu_id) as s FROM `Score`
+GROUP BY stu_id) t
+LEFT JOIN `Student` s
+ON t.stu_id = s.stu_id
+WHERE t.s = 2;
+
 -- 查询男生、女生人数
+-- 解：学习使用条件语句
+SELECT 
+case
+when stu_sex = '男' then '男'
+when stu_sex = '女' then '女'
+end stu_sex, COUNT(stu_sex) num
+FROM `Student`
+GROUP BY stu_sex;
+
+
 
 -- 查询名字中含有「风」字的学生信息
+SELECT * FROM `Student`
+WHERE stu_name LIKE '%风%';
+
+
 
 -- 查询同名同性学生名单，并统计同名人数
+SELECT stu_name, stu_sex, count(*) FROM `Student`
+GROUP BY stu_name, stu_sex
+HAVING COUNT(*) > 1;
 
 -- 查询 1990 年出生的学生名单
+SELECT * FROM `Student`
+WHERE year(stu_age) = '1990';
+ 
 
 -- 查询每门课程的平均成绩，结果按平均成绩降序排列，平均成绩相同时，按课程编号升序排列
+SELECT * FROM `Course`;
+SELECT * FROM `Score`;
+SELECT c_id, AVG(score) as avg_score FROM `Score`
+GROUP BY c_id
+ORDER BY avg_score DESC, c_id ASC;
 
--- 查询平均成绩大于等于 85 的所有学生的学号、姓名和平均成绩
+
+-- 查询平均成绩大于等于 85 的所有学生的学号、姓名和平均成绩，。
+SELECT sc.stu_id, stu.stu_name, avg_score FROM `Student` stu
+RIGHT JOIN 
+(
+	SELECT stu_id, AVG(score) as avg_score FROM `Score`
+	GROUP BY stu_id
+	HAVING avg_score > 85
+) sc
+ON stu.stu_id = sc.stu_id;
+
 
 -- 查询课程名称为「数学」，且分数低于 60 的学生姓名和分数
+SELECT stu.stu_name, co.c_name, score FROM `Score` sc
+LEFT JOIN `Student` stu
+ON sc.stu_id = stu.stu_id
+LEFT JOIN `Course` co
+ON sc.c_id = co.c_id
+WHERE co.c_name = '数学' AND score < 60;
+
 
 -- 查询所有学生的课程及分数情况（存在学生没成绩，没选课的情况）
 
@@ -445,3 +604,32 @@ WHERE score < 60;
 
 -- 查询下月过生日的学生
 
+
+-- 额外增加的练习：
+-- 1. 计算用户的平均次日留存率
+-- 使用的是 wechatapp 中的 question_practice_detail 表
+-- 解：
+-- 这道题的有趣之处在于，之前的解题思路一般是一般是开局多张表，以“你希望看到怎样一张最终表”入手，多表归一得到最终表后解决。
+-- 而这次就一张表，2个有效变量，人id，答题时间，问题不在信息没汇总，而在于汇总过度，需要先将其先分裂再归一，才能得到真正的最终表
+
+SELECT * FROM question_practice_detail;
+
+-- 先考虑如何得到第二天来做题的人数，以下为错误思路
+SELECT distinct device_id, date FROM question_practice_detail
+WHERE date in (SELECT DATE_ADD(date, interval 1 day) FROM question_practice_detail);
+-- 以上的做法不正确，因为筛选没有对 device_id 构成约束
+
+-- 正确解法：
+-- 1.先分裂后在join，依靠join条件对时间、人员进行双重限制
+SELECT * FROM
+(SELECT distinct device_id, date FROM question_practice_detail) as q
+LEFT JOIN
+(SELECT distinct device_id, DATE_ADD(date, interval 1 day) as datee FROM question_practice_detail) as nq
+ON
+nq.device_id = q.device_id AND nq.datee = q.date;
+
+SELECT COUNT(distinct nq.device_id, datee)/COUNT(distinct q.device_id, date) FROM question_practice_detail q
+LEFT JOIN
+(SELECT distinct device_id, DATE_ADD(date, interval 1 day) as datee from question_practice_detail) as nq 
+ON
+nq.device_id = q.device_id AND nq.datee = q.date;
