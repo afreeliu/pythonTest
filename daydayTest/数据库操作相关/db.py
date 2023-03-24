@@ -18,8 +18,8 @@ class DBHelper(object):
             host='127.0.0.1',
             port=3306,
             user='root',
-            password='Liu@Fei4ever',
-            database='mysql',
+            password='liufei559420',
+            database='slg_game',
             charset='utf8'
         )
 

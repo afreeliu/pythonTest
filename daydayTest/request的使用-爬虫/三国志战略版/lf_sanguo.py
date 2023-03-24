@@ -5,7 +5,7 @@ import requests
 import xlrd
 import xlwt
 import os
-import logging, time, os
+import logging, time, os, json
 from urllib.parse import *
 
 class Detail:
@@ -79,11 +79,12 @@ def fetch_hero_list(page=0, size=20):
                 print(hero)
                 download_icon(hero.icon, f'{hero.priRowId}_{hero.priVal}')
                 fetch_hero_detail(hero.priRowId)
+            save_heros_info()
             # fetch_hero_detail()
             # download_hero_icon()
     else:
         print('请求出错')
-
+HEROS_DEATIL_LIST = []
 def fetch_hero_detail(priRowId):
     print('获取武将的详情')
     hero_url = 'https://galaxias-api.lingxigames.com/ds/ajax/endpoint.json'
@@ -97,7 +98,7 @@ def fetch_hero_detail(priRowId):
                         }
              }
     hero_json = requests.post(hero_url, json=param).json()
-    print(hero_json)
+    HEROS_DEATIL_LIST.append(hero_json)
 
 
 def is_need_download_icon(iconName):
@@ -131,12 +132,13 @@ def download_icon(downloadUrl: str, fileName: str):
 
 # 保存获取的数据
 def save_heros_info():
-    file = os.path.join(os.getcwd(),'/data/heros.xlsx')
-    if not os.path.exists(file):
-        print('没有这个表，需要创建')
-        book = xlwt.Workbook(encoding='utf-8')
-
-
+    file = os.path.join(os.getcwd(),'data/charater.json')
+    try:
+        with open(file, 'w', encoding='utf-8-sig') as f:
+            for hero in HEROS_DEATIL_LIST:
+                json.dump(hero, f, ensure_ascii=False)
+    except Exception as e:
+        print(f'打开文件出错{e}')
 
 if __name__ == '__main__':
     # 三国志 2017 官网：http://sgz2017.youkia.com/strategy/list
